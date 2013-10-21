@@ -12,13 +12,13 @@ import os
 from fuse import FUSE, FuseOSError, Operations, LoggingMixIn
 
 
-class Loopback(LoggingMixIn, Operations):
+class Cirrus(LoggingMixIn, Operations):
     def __init__(self, root):
         self.root = realpath(root)
         self.rwlock = Lock()
 
     def __call__(self, op, path, *args):
-        return super(Loopback, self).__call__(op, self.root + path, *args)
+        return super(Cirrus, self).__call__(op, self.root + path, *args)
 
     def access(self, path, mode):
         if not os.access(path, mode):
@@ -39,7 +39,8 @@ class Loopback(LoggingMixIn, Operations):
     def getattr(self, path, fh=None):
         st = os.lstat(path)
         return dict((key, getattr(st, key)) for key in ('st_atime', 'st_ctime',
-            'st_gid', 'st_mode', 'st_mtime', 'st_nlink', 'st_size', 'st_uid'))
+                                                        'st_gid', 'st_mode', 'st_mtime', 'st_nlink', 'st_size',
+                                                        'st_uid'))
 
     getxattr = None
 
@@ -72,8 +73,9 @@ class Loopback(LoggingMixIn, Operations):
     def statfs(self, path):
         stv = os.statvfs(path)
         return dict((key, getattr(stv, key)) for key in ('f_bavail', 'f_bfree',
-            'f_blocks', 'f_bsize', 'f_favail', 'f_ffree', 'f_files', 'f_flag',
-            'f_frsize', 'f_namemax'))
+                                                         'f_blocks', 'f_bsize', 'f_favail', 'f_ffree', 'f_files',
+                                                         'f_flag',
+                                                         'f_frsize', 'f_namemax'))
 
     def symlink(self, target, source):
         return os.symlink(source, target)
@@ -96,4 +98,4 @@ if __name__ == '__main__':
         print('usage: %s <root> <mountpoint>' % argv[0])
         exit(1)
 
-    fuse = FUSE(Loopback(argv[1]), argv[2], foreground=True)
+    fuse = FUSE(Cirrus(argv[1]), argv[2], foreground=True)
