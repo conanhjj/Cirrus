@@ -31,8 +31,8 @@ class Memory(LoggingMixIn, Operations):
         'The below is used for fec encode/decode'
         self.k = 2 # two pieces
         self.m = 3 # after encoding output three pieces
-        self.encode = fec.Encoder(self.k,self.m).encode
-        self.decode = fec.Decoder(self.k,self.m).decode
+        self.encode = fec.Encoder(self.k,self.m, 'password').encode
+        self.decode = fec.Decoder(self.k,self.m, 'password').decode
 
     def chmod(self, path, mode):
         self.files[path]['st_mode'] &= 0770000

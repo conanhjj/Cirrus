@@ -34,6 +34,12 @@
 # official policies, either expressed or implied, of Cornell University.
 # 
 
+
+# UIUC CS523 Fall2013 Cirrus project modification
+# Add Simple AES encryption using pycrypto package (https://pypi.python.org/pypi/pycrypto)
+# 
+
+
 import sys
 try:
     import zfec
@@ -43,17 +49,38 @@ Zfec can be obtained from http://pypi.python.org/pypi/zfec
 """
     sys.exit(1)
 
-import struct, hashlib, base64
+import struct, hashlib, base64, md5
+from fractions import gcd
 #from racs.util.stats import *
 
-METABYTES = 3
+try:
+    from Crypto.Cipher import AES
+except ImportError, e:
+    print >> sys.stderr, """Fatal error: Cannot import Python Cryptography Toolkit (pycrypto).
+pycrypto can be obtained from https://pypi.python.org/pypi/pycrypto
+"""
+    sys.exit(1)
 
-def compute_padding(k, bytes):
-    r = bytes % k
+
+METABYTES = 3
+CYPHER_BLOCK_BYTES = 16 #Use 16 as the cipher's key length and block size
+CYPHER_IV = 'CS523Fa13 Cirrus' # Must be 16 byte
+
+# Use md5 to process the input key as md5, and the size is 16
+def process_cipherkey(key):
+    m = md5.new()
+    m.update(key)
+    return m.digest()
+
+# The padding will consider both k the split number, and the block size CYPHER_BLOCK_BYTES
+
+def compute_padding(k, data_len):
+    base_len = (k * CYPHER_BLOCK_BYTES) / gcd(k, CYPHER_BLOCK_BYTES);
+    r = data_len % base_len
     if r == 0:
         return 0
     else:
-        return k - r
+        return base_len - r
 
     
 def div_ceil(n, d):
@@ -124,10 +151,11 @@ class ShareMeta:
 
 
 class Encoder(object):
-    def __init__(self, k, m):
+    def __init__(self, k, m, key):
         self.fec = zfec.Encoder(k, m)
         self.k = k
         self.m = m
+        self.cipher = AES.new(process_cipherkey(key), AES.MODE_CBC, CYPHER_IV)
 
     def encode(self, data, md5=None):
         """
@@ -148,6 +176,7 @@ class Encoder(object):
         padding_bytes = compute_padding(self.fec.k, osize)
         
         padded_data = data + '\0' * padding_bytes
+        padded_data = self.cipher.encrypt(padded_data) #use AES encoding
 
         if len(padded_data) % self.fec.k != 0:
             raise Exception # sanity check
@@ -186,8 +215,9 @@ class Encoder(object):
 
 
 class Decoder(object):
-    def __init__(self, k, m):
+    def __init__(self, k, m, key):
         self.fec = zfec.Decoder(k, m)
+        self.cipher = AES.new(process_cipherkey(key), AES.MODE_CBC, CYPHER_IV)
 
     def decode(self, shares, fecmeta): #, sharenums, padlen):
         """
@@ -206,6 +236,7 @@ class Decoder(object):
         padding_bytes = compute_padding(self.fec.k, fecmeta.size) 
 
         data = ''.join(self.fec.decode(raw_shares, sharenums))
+        data = self.cipher.decrypt(data) 
 
         if padding_bytes > 0: 
             data = data[:-padding_bytes]
