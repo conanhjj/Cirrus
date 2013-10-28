@@ -31,8 +31,8 @@ class Memory(LoggingMixIn, Operations):
         'The below is used for fec encode/decode'
         self.k = 2 # two pieces
         self.m = 3 # after encoding output three pieces
-        self.encode = fec.Encoder(self.k,self.m, 'password').encode
-        self.decode = fec.Decoder(self.k,self.m, 'password').decode
+        self.encoder = fec.Encoder(self.k,self.m, 'password')
+        self.decoder = fec.Decoder(self.k,self.m, 'password')
 
     def chmod(self, path, mode):
         self.files[path]['st_mode'] &= 0770000
@@ -139,14 +139,16 @@ class Memory(LoggingMixIn, Operations):
         print "--------------------"
         print data
         'do fec encoding'
-        shares, fecmeta = self.encode(data)
+        shares, fecmeta = self.encoder.encode(data)
         print "--------fecmeta------------"
-        print str(fecmeta)
+        strmeta = str(fecmeta)
+        print strmeta
         for i,block in enumerate(shares):
             print "--------share[%d]-----" % i
             print str(block)
         'do fec decoding, only use part of it'
-        decoded_data = self.decode(shares[1:], fecmeta)
+        decode_meta = self.decoder.decode_meta(strmeta)
+        decoded_data = self.decoder.decode(shares[1:], decode_meta)
         print "-------------decoded data------------"
         print decoded_data
         print "---------------------------"

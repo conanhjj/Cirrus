@@ -218,6 +218,9 @@ class Decoder(object):
     def __init__(self, k, m, key):
         self.fec = zfec.Decoder(k, m)
         self.cipher = AES.new(process_cipherkey(key), AES.MODE_CBC, CYPHER_IV)
+        
+    def decode_meta(self, fecmetastr):
+        return FECMeta.read(fecmetastr)
 
     def decode(self, shares, fecmeta): #, sharenums, padlen):
         """
