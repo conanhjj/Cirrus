@@ -9,6 +9,8 @@ from threading import Lock
 
 import os
 
+import cloud
+
 from fuse import FUSE, FuseOSError, Operations, LoggingMixIn
 
 
@@ -16,6 +18,7 @@ class Cirrus(LoggingMixIn, Operations):
     def __init__(self, root):
         self.root = realpath(root)
         self.rwlock = Lock()
+        self.cloud = cloud.CloudFS()
 
     def __call__(self, op, path, *args):
         return super(Cirrus, self).__call__(op, self.root + path, *args)
@@ -55,7 +58,11 @@ class Cirrus(LoggingMixIn, Operations):
     def read(self, path, size, offset, fh):
         with self.rwlock:
             os.lseek(fh, offset, 0)
-            return os.read(fh, size)
+            localdata = os.read(fh, size)
+            clouddata = self.cloud.read(path, size, offset)
+            if clouddata != localdata:
+                print('Cirrus Read: Cloud cotent for %s is wrong!' % path)
+            return localdata
 
     def readdir(self, path, fh):
         return ['.', '..'] + os.listdir(path)
@@ -83,6 +90,11 @@ class Cirrus(LoggingMixIn, Operations):
     def truncate(self, path, length, fh=None):
         with open(path, 'r+') as f:
             f.truncate(length)
+            'Need read the new data and call write again'
+            f.seek(0, 0)
+            newdata = f.read(length)
+            self.cloud.write(path, newdata)
+            
 
     unlink = os.unlink
     utimens = os.utime
@@ -90,7 +102,14 @@ class Cirrus(LoggingMixIn, Operations):
     def write(self, path, data, offset, fh):
         with self.rwlock:
             os.lseek(fh, offset, 0)
-            return os.write(fh, data)
+            localwriteret = os.write(fh, data)
+        with open(path, 'r') as f:
+            'query the new file size'
+            newsize = os.stat(path).st_size
+            f.seek(0, 0)
+            newdata = f.read(newsize)
+            self.cloud.write(path, newdata)
+        return localwriteret
 
 
 if __name__ == '__main__':
