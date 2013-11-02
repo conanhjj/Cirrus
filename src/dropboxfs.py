@@ -39,12 +39,12 @@ class DropboxFS():
             f, metadata = self.client.get_file_and_metadata(dropboxfilename(bucket, filename))
             data = f.read()
             f.close()
-            print 'Get file successfully!'
             return data
         except dropbox.rest.ErrorResponse:
             print 'Cannot get file!'
             return ''
     
+    'return old filename and max ver'
     def get_file_maxver(self, bucket, shortname):
         try:
             print 'try read files in  dropbox with %s, %s' % (bucket,shortname)
@@ -62,7 +62,7 @@ class DropboxFS():
                             ver = cur_ver
                             cur_filename = name
             print 'file the max ver filename %s' % cur_filename
-            return ver
+            return cur_filename, ver
         except dropbox.rest.ErrorResponse:
             print 'cannot list filenames'
             return ''

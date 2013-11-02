@@ -45,12 +45,20 @@ class CloudFS:
         return string.split(fullname, '_')[-2] #-1 is v, -1 is meta
     
     def read(self, path, size, offset):
+        bucket, shortname = self.get_bucket_shortfilename(path)
+        
         'query the file with the path name and with the max version number'
-
+        'we use dropbox as the key'
+        cur_filename, old_ver = self.dropbox.get_file_maxver(bucket, shortname)
+        metastr = string.split(cur_filename, '_')[-2]
+        
+        dropbox_block = self.dropbox.read(bucket, cur_filename)
+        
+        print "dropbox content: %s" %  dropbox_block
+        
         'then get each block and the meta_str'
         'throw error if the meta strs are different in different clouds'
-        metastr = self.getmetastr(path)
-        blocks = ['cloud0 data', 'cloud1 data', 'cloud2 data']
+        blocks = [dropbox_block, 'cloud1 data', 'cloud2 data']
         'Try to get the remote data'
         #decode_meta = self.decoder.decode_meta(metastr)
         #decoded_data = self.decoder.decode(blocks[1:], decode_meta)
@@ -75,7 +83,7 @@ class CloudFS:
         
         bucket, shortname = self.get_bucket_shortfilename(path)
         
-        old_ver = self.dropbox.get_file_maxver(bucket, shortname)
+        cur_filename, old_ver = self.dropbox.get_file_maxver(bucket, shortname)
         
         'query the file with the path name and with the max version number'
         'no such file, ver=1, else ver = 2'
@@ -83,5 +91,5 @@ class CloudFS:
         bucket, filename = self.get_bucket_fullfilename(path,  metastr, ver)
         print "---------bucket: %s, filename: %s" % (bucket, filename)
         'write to different cloud with differnt blocks'
-        self.dropbox.write(bucket, filename, data)
+        self.dropbox.write(bucket, filename, shares[0])
         
