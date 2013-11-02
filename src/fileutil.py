@@ -17,4 +17,9 @@ class FileUtil:
 
         return tuple([file_dir, file_name])
 
+if __name__ == "__main__":
+    print FileUtil.split_path("/123456.ext")
+    print FileUtil.split_path("/123/456.ext")
+    print FileUtil.split_path("/123456.ext/")  # illegal
+    print FileUtil.split_path("123456.ext")  # illegal
 
