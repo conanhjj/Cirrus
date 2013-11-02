@@ -81,7 +81,7 @@ class BucketGenerator:
 
     @staticmethod
     def __gen(file_dir):
-        return "example_bucket"
+        return "cirrus_bucket"
 
 if __name__ == "__main__":
     bucket_gen = BucketGenerator("new_bucket_file")

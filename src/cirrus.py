@@ -61,7 +61,9 @@ class Cirrus(LoggingMixIn, Operations):
             localdata = os.read(fh, size)
             clouddata = self.cloud.read(path, size, offset)
             if clouddata != localdata:
-                print('Cirrus Read: Cloud cotent for %s is wrong!' % path)
+                print('Cirrus Read: local data of %s is different to cloud data' % path)
+            else:
+                print('Cirrus Read: Local data of %s is verified by cloud data' % path)
             return localdata
 
     def readdir(self, path, fh):
