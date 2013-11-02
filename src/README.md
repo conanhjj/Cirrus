@@ -26,8 +26,8 @@ python cirrus.py /tmp/cirrusdir #Suppose there is a directory /tmp/cirrusdir
 
 In another session
 ```bash
-echo abcd > /tmp/fusepy/test
-echo efg >> /tmp/fusepy/test
+echo abcd > /tmp/cirrusdir/test
+echo efg >> /tmp/cirrusdir/test
 ```
 
 The cirrus fs console will output the log 
