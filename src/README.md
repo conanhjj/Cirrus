@@ -21,7 +21,7 @@ export DROPBOX_ACCESS_TOKEN=your_dropbox_token
 
 Start the Cirrus folder
 ```bash
-python cirrus.py /tmp/cirrusdir #Suppose there is a directory /tmp/fusepy
+python cirrus.py /tmp/cirrusdir #Suppose there is a directory /tmp/cirrusdir
 ```
 
 In another session
