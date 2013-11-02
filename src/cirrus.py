@@ -113,8 +113,17 @@ class Cirrus(LoggingMixIn, Operations):
 
 
 if __name__ == '__main__':
-    if len(argv) != 3:
-        print('usage: %s <root> <mountpoint>' % argv[0])
+    if len(argv) != 2:
+        print('usage: %s <mountpoint>' % argv[0])
         exit(1)
+    'check whether the paty contains splash '
+    if os.path.basename(argv[1]) == '':
+        cirrus_path = argv[1][:-1]
+    else:
+        cirrus_path = argv[1]
+    'Create the local back store if not exist'
+    cirrus_localpath = cirrus_path +"_local"
+    if not os.path.exists(cirrus_localpath):
+        os.makedirs(cirrus_localpath)
 
-    fuse = FUSE(Cirrus(argv[1]), argv[2], foreground=True)
+    fuse = FUSE(Cirrus(cirrus_localpath), cirrus_path, foreground=True)
