@@ -8,10 +8,7 @@ import string
 import fec
 import fileutil
 import bucketgen
-
-
-
-
+import dropboxfs
     
 
 class CloudFS:
@@ -23,6 +20,7 @@ class CloudFS:
         self.encoder = fec.Encoder(self.k,self.m, 'password')
         self.decoder = fec.Decoder(self.k,self.m, 'password')
         self.bucketgen = bucketgen.BucketGenerator()
+        self.dropbox = dropboxfs.DropboxFS()
 
     'input full path return paris of bucket name and shortfilename(no meta and ver)'
     def get_bucket_shortfilename(self, path):
@@ -44,7 +42,7 @@ class CloudFS:
         print "----query clouds for----bucket: %s, shortfilename: %s" % (bucket, shortfilename)
         fullname = shortfilename + '_test_meta_3'
         'split fullname by _'
-        return string.split(fullname, '_')[1]
+        return string.split(fullname, '_')[-2] #-1 is v, -1 is meta
     
     def read(self, path, size, offset):
         'query the file with the path name and with the max version number'
@@ -75,13 +73,15 @@ class CloudFS:
             print str(block)
         
         
+        bucket, shortname = self.get_bucket_shortfilename(path)
+        
+        old_ver = self.dropbox.get_file_maxver(bucket, shortname)
         
         'query the file with the path name and with the max version number'
         'no such file, ver=1, else ver = 2'
-        old_ver = 1
         ver = old_ver + 1
-        bucket, name = self.get_bucket_fullfilename(path,  metastr, ver)
-        print "---------bucket: %s, filename: %s" % (bucket, name)
+        bucket, filename = self.get_bucket_fullfilename(path,  metastr, ver)
+        print "---------bucket: %s, filename: %s" % (bucket, filename)
         'write to different cloud with differnt blocks'
-        
+        self.dropbox.write(bucket, filename, data)
         
