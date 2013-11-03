@@ -9,7 +9,7 @@ import fec
 import fileutil
 import bucketgen
 import dropboxfs
-    
+import s3fs
 
 class CloudFS:
     def __init__(self):
@@ -21,6 +21,7 @@ class CloudFS:
         self.decoder = fec.Decoder(self.k,self.m, 'password')
         self.bucketgen = bucketgen.BucketGenerator()
         self.dropbox = dropboxfs.DropboxFS()
+        self.s3 = s3fs.S3FS()
 
     'input full path return paris of bucket name and shortfilename(no meta and ver)'
     def get_bucket_shortfilename(self, path):
@@ -53,18 +54,20 @@ class CloudFS:
         metastr = string.split(cur_filename, '_')[-2]
         
         dropbox_block = self.dropbox.read(bucket, cur_filename)
-        
         print "dropbox content: %s" %  dropbox_block
+        s3_block = self.s3.read(bucket, cur_filename)
+        print "s3 content: %s" %  s3_block
+        
         
         'then get each block and the meta_str'
         'throw error if the meta strs are different in different clouds'
-        blocks = [dropbox_block, 'cloud1 data', 'cloud2 data']
+        blocks = [dropbox_block, s3_block, 'cloud2 data']
         'Try to get the remote data'
-        #decode_meta = self.decoder.decode_meta(metastr)
-        #decoded_data = self.decoder.decode(blocks[1:], decode_meta)
+        decode_meta = self.decoder.decode_meta(metastr)
+        decoded_data = self.decoder.decode(blocks[0:2], decode_meta)
+        print "decoded data is %s" % decoded_data
         'compare the result'
-        #return decoded_data[offset:(offset+size)]
-        return metastr
+        return decoded_data[offset:(offset+size)]
 
     
     def rename(self, old, new):
@@ -92,4 +95,5 @@ class CloudFS:
         print "---------bucket: %s, filename: %s" % (bucket, filename)
         'write to different cloud with differnt blocks'
         self.dropbox.write(bucket, filename, shares[0])
+        self.s3.write(bucket, filename, shares[1])
         
