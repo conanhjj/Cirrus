@@ -1,13 +1,7 @@
 #!/usr/bin/python
 
-import StringIO
-import os
-import shutil
-import tempfile
-import time
-from gslib.third_party.oauth2_plugin import oauth2_plugin
-
 import boto
+from gslib.third_party.oauth2_plugin import oauth2_plugin
 
 # URI scheme for Google Cloud Storage.
 GOOGLE_STORAGE = 'gs'
