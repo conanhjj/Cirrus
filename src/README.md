@@ -8,6 +8,8 @@ Please install FUSE and all the fusepy, Crypto,  zfec ,boto, dropbox.
 - zfec https://pypi.python.org/pypi/zfec
 - boto https://pypi.python.org/pypi/boto
 - dropbox https://pypi.python.org/pypi/dropbox
+- gsutil https://pypi.python.org/pypi/gsutil/3.37
+- azure https://pypi.python.org/pypi/azure/0.7.0
 
 
 
