@@ -5,7 +5,7 @@ s3 = boto.connect_s3()
 
 bucket_name = "example_bucketadffdks"
 bucket = s3.get_bucket(bucket_name)
-# bucket = s3.create_bucket(bucket_name)
+bucket = s3.create_bucket('iffqjlc6prsf6ieehycjc7jvfu======')
 
 k = Key(bucket)
 

@@ -1,6 +1,7 @@
 __author__ = 'Wind'
 
 import os
+import base64, md5
 
 class BucketGenerator:
 
@@ -81,7 +82,11 @@ class BucketGenerator:
 
     @staticmethod
     def __gen(file_dir):
-        return "cirrus_bucket"
+        m = md5.new()
+        m.update(file_dir)
+        #s3 boto doesn't support upper case. And also not allow "="
+        # just replace the padding
+        return base64.b32encode(m.digest())[0:-6].lower() #"cirrus_bucket"
 
 if __name__ == "__main__":
     bucket_gen = BucketGenerator("new_bucket_file")

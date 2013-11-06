@@ -14,12 +14,22 @@ class DropboxFS():
     def __init__(self):
         access_token = os.environ['DROPBOX_ACCESS_TOKEN']
         self.client = dropbox.client.DropboxClient(access_token)
-        
+
+    def ensure_get_bucket(self, bucket_name):
+        bucket_full_name = '/'+bucket_name+'/'
+        try:
+            self.client.metadata(bucket_full_name)
+        except dropbox.rest.ErrorResponse:
+            #not found the bucket
+            self.client.file_create_folder(bucket_full_name)
+            print 'create new bucket in dropbox: %s' % bucket_name
+        return bucket_name
         
     def write(self, bucket, filename, data):
         print 'try write to dropbox with %s, %s' % (bucket,filename)
         'not know how to directly write content, create a local file then rm it'
         try:
+            self.ensure_get_bucket(bucket)
             tmp_file = open(filename, 'w')
             tmp_file.write(data)
             tmp_file.close()
@@ -47,6 +57,7 @@ class DropboxFS():
     'return old filename and max ver'
     def get_file_maxver(self, bucket, shortname):
         try:
+            self.ensure_get_bucket(bucket)
             print 'try read files in  dropbox with %s, %s' % (bucket,shortname)
             resp = self.client.metadata('/'+bucket+'/') 
             ver = 0

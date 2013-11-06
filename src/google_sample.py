@@ -20,7 +20,7 @@ print content
 # list all objects in a bucket
 uri =  boto.storage_uri(bucket_name, GOOGLE_STORAGE)
 for obj in uri.get_bucket():
-  print obj.name
+    print obj.name
 
 # delete an object
 uri = boto.storage_uri(bucket_name + '/' + filename, GOOGLE_STORAGE)
