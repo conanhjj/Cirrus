@@ -4,7 +4,6 @@ import os
 from azure.storage import *
 
 blob_service = BlobService(account_name=os.environ['AZURE_ACCOUNT'], account_key=os.environ['AZURE_KEY'])
-
 # create a container
 container_name = 'cirrus-bucket'
 # blob_service.create_container(container_name)

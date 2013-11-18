@@ -5,45 +5,49 @@ Created on Nov 2, 2013
 '''
 import os, string
 import boto
-from boto.s3.key import Key
+from gslib.third_party.oauth2_plugin import oauth2_plugin
 
-class S3FS():
+# URI scheme for Google Cloud Storage.
+GOOGLE_STORAGE = 'gs'
+
+class GSFS():
     
-    def __init__(self):
-        self.s3 = boto.connect_s3()
+#    def __init__(self):       
     
     def ensure_get_bucket(self, bucket_name):
-        bucket = self.s3.lookup(bucket_name)
+        uri=boto.storage_uri(bucket_name, GOOGLE_STORAGE)
+        bucket = uri.connect().lookup(bucket_name)
         if bucket == None:
-            bucket = self.s3.create_bucket(bucket_name)
-            print 'create new bucket in s3: %s' % bucket_name
+            try:
+                bucket = uri.create_bucket()
+                print "gs create bucket done!"
+            except boto.exception.StorageCreateError, e:
+                print "gs create bucket failed"
+                
         return bucket
         
     def write(self, bucket, filename, data):
         print 'try write to s3 with %s, %s' % (bucket,filename)
         'not know how to directly write content, create a local file then rm it'
         try:
-            bucket = self.ensure_get_bucket(bucket)
-            k = Key(bucket)
-            k.key = filename
-            k.set_contents_from_string(data)
+            self.ensure_get_bucket(bucket)
+            uri = boto.storage_uri(bucket + '/' + filename, GOOGLE_STORAGE)
+            uri.new_key().set_contents_from_string(data)
         except IOError:
-            print 'Cannot write file!'
+            print 'GS Cannot write file!'
             
     def read(self, bucket, filename):
-        print 'try read from s3 with %s, %s' % (bucket,filename)
+        print 'try read from gs with %s, %s' % (bucket,filename)
         try:
-            bucket = self.s3.get_bucket(bucket)
-            k = Key(bucket)
-            k.key = filename
-            data =  k.get_contents_as_string()
+            uri = boto.storage_uri(bucket + '/' + filename, GOOGLE_STORAGE)
+            data = uri.get_key().get_contents_as_string()
             return data
         except IOError:
             print 'Cannot read file!'
 
     def get_file_maxver(self, bucket, shortname):
         try:
-            print 'try read files in s3 with %s, %s' % (bucket,shortname)
+            print 'try read files in gs with %s, %s' % (bucket,shortname)
             bucket = self.ensure_get_bucket(bucket)
             key_list = bucket.get_all_keys(prefix=shortname)
             ver = 0

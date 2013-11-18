@@ -155,7 +155,7 @@ class Encoder(object):
         self.fec = zfec.Encoder(k, m)
         self.k = k
         self.m = m
-        self.cipher = AES.new(process_cipherkey(key), AES.MODE_CBC, CYPHER_IV)
+        self.cipher = AES.new(process_cipherkey(key), AES.MODE_ECB, CYPHER_IV)
 
     def encode(self, data, md5=None):
         """
@@ -217,7 +217,7 @@ class Encoder(object):
 class Decoder(object):
     def __init__(self, k, m, key):
         self.fec = zfec.Decoder(k, m)
-        self.cipher = AES.new(process_cipherkey(key), AES.MODE_CBC, CYPHER_IV)
+        self.cipher = AES.new(process_cipherkey(key), AES.MODE_ECB, CYPHER_IV)
         
     def decode_meta(self, fecmetastr):
         return FECMeta.read(fecmetastr)
