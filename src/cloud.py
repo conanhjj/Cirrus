@@ -27,17 +27,21 @@ class CloudFS:
         self.gs = gsfs.GSFS()
         self.azure = azurefs.AZUREFS()
 
-    'input full path return paris of bucket name and shortfilename(no meta and ver)'
+    'input full path return paris of bucket name and encrypted shortfilename(no meta and ver)'
     def get_bucket_shortfilename(self, path):
         paths = fileutil.FileUtil.split_path(path)
         bucket = self.bucketgen.get_bucket(paths[0])
         filename = paths[1]
-        return bucket, filename
+        filename_size = len(filename)
+        
+        encrypted_filename = self.decoder.get_encrypted_filename(filename)
+        
+        return bucket, encrypted_filename, filename_size
 
     'input full path, metastr, ver, return paris of bucket name and fullfilename'
     def get_bucket_fullfilename(self, path, metastr, ver):
-        bucket, shortname = self.get_bucket_shortfilename(path)
-        filename = shortname + '_'+ metastr + '_' + str(ver)
+        bucket, encrypted_filename, filename_size = self.get_bucket_shortfilename(path)
+        filename = encrypted_filename + '_'+ metastr + '_' + str(ver)
         return bucket, filename
 
         
@@ -50,7 +54,7 @@ class CloudFS:
         return string.split(fullname, '_')[-2] #-1 is v, -1 is meta
     
     def read(self, path, size, offset):
-        bucket, shortname = self.get_bucket_shortfilename(path)
+        bucket, shortname, filename_size = self.get_bucket_shortfilename(path)
         
         'query the file with the path name and with the max version number'
         'we use dropbox as the key'
@@ -71,6 +75,8 @@ class CloudFS:
         blocks = [dropbox_block, s3_block, gs_block, azure_block]
         'Try to get the remote data'
         decode_meta = self.decoder.decode_meta(metastr)
+        decoded_filename = self.decoder.decode_filename(shortname, decode_meta.fnsz)
+        print "decoded filename is: %s\n" % decoded_filename
         decoded_data = self.decoder.decode([blocks[0],blocks[3]], decode_meta)
         print "decoded data is\n%s" % decoded_data
         'compare the result'
@@ -82,7 +88,10 @@ class CloudFS:
         'cp the file with the new name, maintain the meta'
         
     def write(self, path, data):
-        shares, fecmeta = self.encoder.encode(data)
+        
+        bucket, shortname, filename_size = self.get_bucket_shortfilename(path)
+        print "filename %s, filename size %d\n" %(shortname, filename_size)
+        shares, fecmeta = self.encoder.encode(data, filename_size)
         print "--------fecmeta------------"
         metastr = str(fecmeta)
         print metastr
@@ -94,7 +103,7 @@ class CloudFS:
         #decoded_data = self.decoder.decode(shares[0:2], decode_meta)
         #print "decoded data is\n%s" % decoded_data
 
-        bucket, shortname = self.get_bucket_shortfilename(path)
+        
         
         cur_filename, old_ver = self.dropbox.get_file_maxver(bucket, shortname)
         

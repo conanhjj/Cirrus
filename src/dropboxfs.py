@@ -65,7 +65,7 @@ class DropboxFS():
             if 'contents' in resp:
                 for f in resp['contents']:
                     name = os.path.basename(f['path'])
-                    print name
+                    #print name
                     if string.find(name, shortname) == 0:
                         secs = string.split(name, '_')
                         cur_ver = int(secs[-1])

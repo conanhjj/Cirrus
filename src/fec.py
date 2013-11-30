@@ -82,6 +82,14 @@ def compute_padding(k, data_len):
     else:
         return base_len - r
 
+
+# we need encrypt the filename use the AES, so we need attach it.
+def compute_filename_padding(filename_len):
+    r = filename_len % CYPHER_BLOCK_BYTES
+    if r == 0:
+        return 0
+    else:
+        return CYPHER_BLOCK_BYTES - r
     
 def div_ceil(n, d):
     """
@@ -94,12 +102,13 @@ class FECMeta:
     header = 'x-amz-meta-'+short_header
 
     # stored in x-amz-meta-racs header
-    _fmt = 'I32s'
-    _fields = "size md5".split()
+    _fmt = 'II32s'
+    _fields = "size fnsz md5".split()
     meta_length = struct.calcsize(_fmt)
 
-    def __init__(self, size, md5):
+    def __init__(self, size, fnsz, md5):
         self.size = size # size of original file
+        self.fnsz = fnsz # size of original filename
         self.md5 = md5
 
     @classmethod
@@ -157,7 +166,7 @@ class Encoder(object):
         self.m = m
         self.cipher = AES.new(process_cipherkey(key), AES.MODE_ECB, CYPHER_IV)
 
-    def encode(self, data, md5=None):
+    def encode(self, data, filename_size, md5=None):
         """
         @param data: string
 
@@ -188,7 +197,7 @@ class Encoder(object):
         segments = [ padded_data[i*chunksize:(i+1)*chunksize] for i in xrange(self.fec.k) ]
         blocks = self.fec.encode(segments)
 
-        fecmeta = FECMeta(size = osize, md5 = md5)
+        fecmeta = FECMeta(size = osize, fnsz = filename_size, md5 = md5)
 
         for i,block in enumerate(blocks):
             blocks[i] = ShareMeta.prepend_to(block, sharenum = i)
@@ -210,6 +219,7 @@ class Encoder(object):
 #        record_event("zfec:encode time", elapsed())()
 
 
+
         return blocks, fecmeta
 
 
@@ -221,6 +231,22 @@ class Decoder(object):
         
     def decode_meta(self, fecmetastr):
         return FECMeta.read(fecmetastr)
+    
+    def get_encrypted_filename(self, filename):
+        filename_size = len(filename)
+        
+        filename_padding_bytes = compute_filename_padding(filename_size)
+        padded_filename = filename + '\0' * filename_padding_bytes
+        encrypted_filename = self.cipher.encrypt(padded_filename)
+        encoded_filename = base64.b64encode(encrypted_filename, '+-')
+        
+        return encoded_filename
+
+    def decode_filename(self, encoded_filename, filename_size):
+        decoded_filename = base64.b64decode(encoded_filename, '+-')
+        decrypted_filename = self.cipher.decrypt(decoded_filename)
+        return decrypted_filename[0:filename_size]
+        
 
     def decode(self, shares, fecmeta): #, sharenums, padlen):
         """

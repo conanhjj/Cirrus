@@ -90,6 +90,7 @@ class Cirrus(LoggingMixIn, Operations):
         return os.symlink(source, target)
 
     def truncate(self, path, length, fh=None):
+        print "--------->local truncate called %d,%s\n" % (length, path)
         with open(path, 'r+') as f:
             f.truncate(length)
             'Need read the new data and call write again'
@@ -102,6 +103,7 @@ class Cirrus(LoggingMixIn, Operations):
     utimens = os.utime
 
     def write(self, path, data, offset, fh):
+        print "--------->local write called %s\n" % path
         with self.rwlock:
             os.lseek(fh, offset, 0)
             localwriteret = os.write(fh, data)
