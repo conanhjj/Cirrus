@@ -59,6 +59,8 @@ class CloudFS:
     def query_cloudfile_md5(self, path):
         bucket, shortname, filename_size = self.get_bucket_shortfilename(path)
         cur_filename, old_ver = self.dropbox.get_file_maxver(bucket, shortname)
+        if cur_filename == '': #not found in cloud
+            return '' # empty md5
         metastr = string.split(cur_filename, '_')[-2]
         fecmeta = self.decoder.decode_meta(metastr)
         return fecmeta.md5
