@@ -45,7 +45,7 @@ class BucketGenerator:
                     if mode == 1:
                         bucket, file_dir_list = line.split(" ")
                         file_dir_list = eval(file_dir_list)
-                        print file_dir_list
+                        # print file_dir_list
                         self.bucket2dir[bucket] = file_dir_list
                     elif mode == 2:
                         file_dir, bucket = line.split(" ")
@@ -77,6 +77,8 @@ class BucketGenerator:
 
         if old_ver == 0:
             print "mapping is not on cloud"
+            self.flush_to_clouds()
+            print 'flush to cloud successfully'
             return #no cloud backup
         
         with open(self.bucket_file, 'r') as f:

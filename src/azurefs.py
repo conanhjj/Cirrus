@@ -14,10 +14,11 @@ class AZUREFS():
     
     def ensure_get_bucket(self, bucket_name):
         try:
-            self.blob_service.get_container_acl(bucket_name)
-        except:
-            #the container is not exists.
+            # self.blob_service.get_container_acl(bucket_name)
             self.blob_service.create_container(bucket_name)
+            print 'create container ' + bucket_name + ' successfully'
+        except IOError:
+            print 'the container exists'
         
     def write(self, bucket, filename, data):
         # print 'try write to azure with %s, %s' % (bucket,filename)

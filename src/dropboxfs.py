@@ -124,8 +124,9 @@ class DropboxFS():
             if 'contents' in resp:
                 for f in resp['contents']:
                     name = os.path.basename(f['path'])
-                    if prefix == name.split('_')[-3]:
-                        self.client.file_delete('/' + bucket + '/' + name)
+                    if name[0] != '.':
+                        if prefix == name.split('_')[-3]:
+                            self.client.file_delete('/' + bucket + '/' + name)
             print 'Delete dropbox file /' + bucket + '/' + prefix + ' successfully!'
         except dropbox.rest.ErrorResponse:
             print 'Cannot delete dropbox file /' + bucket + '/' + prefix 

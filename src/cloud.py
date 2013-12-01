@@ -18,6 +18,7 @@ class CloudFS:
     def __init__(self, local_path):
         'initialize the cloud storage'
         'The below is used for fec encode/decode'
+        self.local_path = local_path
         self.k = 2 # two pieces
         self.m = 3 # after encoding output three pieces
         # k, m, AES key
@@ -27,8 +28,13 @@ class CloudFS:
         self.s3 = s3fs.S3FS()
         self.gs = gsfs.GSFS()
         self.azure = azurefs.AZUREFS()
+<<<<<<< HEAD
         #self.clouds = [self.dropbox, self.s3, self.gs, self.azure]
         self.clouds = [self.dropbox, self.s3, self.azure]
+=======
+        self.clouds = [self.dropbox, self.s3, self.gs, self.azure]
+        self.clean()
+>>>>>>> delete and clean
         self.bucketgen = bucketgen.BucketGenerator(os.path.join(local_path, '.bucketmap'), clouds = self.clouds, key = 'password')
 
     'input full path return paris of bucket name and encrypted shortfilename(no meta and ver)'
@@ -103,9 +109,9 @@ class CloudFS:
 
     def write(self, path, data):        
         bucket, shortname, filename_size = self.get_bucket_shortfilename(path)
-        print "filename %s, filename size %d\n" %(shortname, filename_size)
+        # print "filename %s, filename size %d\n" %(shortname, filename_size)
         shares, fecmeta = self.encoder.encode(data, filename_size)
-        print "--------fecmeta------------"
+        # print "--------fecmeta------------"
         metastr = str(fecmeta)
         # print metastr
         # for i,block in enumerate(shares):
@@ -114,9 +120,7 @@ class CloudFS:
         
         #decode_meta = self.decoder.decode_meta(metastr)
         #decoded_data = self.decoder.decode(shares[0:2], decode_meta)
-        #print "decoded data is\n%s" % decoded_data
-
-        
+        #print "decoded data is\n%s" % decoded_data        
         
         cur_filename, old_ver = self.dropbox.get_file_maxver(bucket, shortname)
         
@@ -132,7 +136,9 @@ class CloudFS:
         self.azure.write(bucket, filename, shares[2])
 
     def delete(self, path):
-        bucket, prefix = self.get_bucket_shortfilename(path)
+        bucket, prefix, filename_size = self.get_bucket_shortfilename(path)
+        print '--------bucket: ' + bucket
+        print '--------prefix: ' + prefix
         self.dropbox.delete(bucket, prefix)
         self.s3.delete(bucket, prefix)
         self.gs.delete(bucket, prefix)
@@ -146,7 +152,7 @@ class CloudFS:
         self.azure.delete_bucket(bucket)
 
     def get_all_files(self, root):
-        files = self.dropbox.get_all_files(root)
+        files = self.dropbox.get_all_files(self.local_path)
 
     def clean(self):
         self.dropbox.clean()

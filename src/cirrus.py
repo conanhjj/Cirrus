@@ -22,8 +22,7 @@ class Cirrus(LoggingMixIn, Operations):
         self.root = realpath(root)
         self.rwlock = Lock()
         self.cloud = cloud.CloudFS(self.root)
-        self.cloud.clean()
-        self.local_sync = SyncThread(self.root, self.cloud)
+        # self.local_sync = SyncThread(self.root, self.cloud)
 
     def __call__(self, op, path, *args):
         return super(Cirrus, self).__call__(op, self.root + path, *args)
@@ -98,7 +97,7 @@ class Cirrus(LoggingMixIn, Operations):
         return os.symlink(source, target)
 
     def truncate(self, path, length, fh=None):
-        print "--------->local truncate called %d,%s\n" % (length, path)
+        # print "--------->local truncate called %d,%s\n" % (length, path)
         with open(path, 'r+') as f:
             f.truncate(length)
             
@@ -111,7 +110,7 @@ class Cirrus(LoggingMixIn, Operations):
     utimens = os.utime
 
     def write(self, path, data, offset, fh):
-        print "--------->local write called %s\n" % path
+        # print "--------->local write called %s\n" % path
         with self.rwlock:
             os.lseek(fh, offset, 0)
             localwriteret = os.write(fh, data)
@@ -146,11 +145,11 @@ if __name__ == '__main__':
         os.makedirs(cirrus_localpath)
 
     cirrus = Cirrus(cirrus_localpath)
-    cirrus.start_sync()
+    #cirrus.start_sync()
     try:
         fuse = FUSE(cirrus, cirrus_path, foreground=True)
     except KeyboardInterrupt:
-        cirrus.stop_sync()
+        #cirrus.stop_sync()
         sys.exit()
-    cirrus.stop_sync()
+    #cirrus.stop_sync()
 
