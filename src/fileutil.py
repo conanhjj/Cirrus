@@ -1,6 +1,6 @@
 __author__ = 'Wind'
 
-import md5
+import hashlib
 
 class FileUtil:
     def __init__(self):
@@ -22,9 +22,9 @@ class FileUtil:
     def file_md5(file_path):
         with open(file_path, 'r') as f:
             data = f.read()
-            m = md5.new()
+            m = hashlib.md5()
             m.update(data)
-            return m.digest()
+            return m.hexdigest()
 
 if __name__ == "__main__":
     print FileUtil.split_path("/123456.ext")

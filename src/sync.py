@@ -24,6 +24,7 @@ class SyncThread(threading.Thread):
             time.sleep(10)
 
     def sync(self, file_name):
+        print "sync thread check:", file_name
         if os.path.isdir(file_name):
             files = os.listdir(file_name)
             parent_directory = file_name + "/"
@@ -32,11 +33,9 @@ class SyncThread(threading.Thread):
                 self.sync(parent_directory + each_file)
         else:
             #check local file_name and remote file
-            right_slash_pos = file_name.rfind("/")
-            if file_name[right_slash_pos+1] == ".":   # ignore dot file
+            if SyncThread.is_hidden_file(file_name):
                 pass
-
-            if not self.is_same(file_name):
+            elif not self.is_same(file_name):
                 print "Push different local file to cloud: " + file_name
                 try:
                     self.cloud.write(file_name, open(file_name).read())
@@ -46,11 +45,19 @@ class SyncThread(threading.Thread):
     def is_same(self, local_file_name):
         local_md5 = FileUtil.file_md5(local_file_name)
         remote_md5 = self.cloud.query_cloudfile_md5(local_file_name)
+        #print "file name", local_file_name
+        #print "local_md5", local_md5
+        #print "remote_md5", remote_md5
         return local_md5 == remote_md5
 
     def stop(self):
         print "local sync thread stop"
         self.stop_sync = True
+
+    @staticmethod
+    def is_hidden_file(file_name):
+        pos = file_name.rfind("/")
+        return len(file_name) != pos+1 and file_name[pos+1] == "."
 
 
 class FakeCloud:
