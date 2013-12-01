@@ -8,10 +8,12 @@ from sys import argv, exit
 from threading import Lock
 
 import os
+import sys
 
 import cloud
 
 from fuse import FUSE, FuseOSError, Operations, LoggingMixIn
+from sync import SyncThread
 
 
 class Cirrus(LoggingMixIn, Operations):
@@ -20,6 +22,7 @@ class Cirrus(LoggingMixIn, Operations):
         self.rwlock = Lock()
         self.cloud = cloud.CloudFS(self.root)
         self.cloud.clean()
+        self.local_sync = SyncThread(self.root, self.cloud)
 
     def __call__(self, op, path, *args):
         return super(Cirrus, self).__call__(op, self.root + path, *args)
@@ -121,6 +124,11 @@ class Cirrus(LoggingMixIn, Operations):
                 self.cloud.write(path, newdata)
         return localwriteret
 
+    def start_sync(self):
+        self.local_sync.start()
+
+    def stop_sync(self):
+        self.local_sync.stop()
 
 if __name__ == '__main__':
     if len(argv) != 2:
@@ -136,4 +144,10 @@ if __name__ == '__main__':
     if not os.path.exists(cirrus_localpath):
         os.makedirs(cirrus_localpath)
 
-    fuse = FUSE(Cirrus(cirrus_localpath), cirrus_path, foreground=True)
+    cirrus = Cirrus(cirrus_localpath)
+    try:
+        fuse = FUSE(cirrus, cirrus_path, foreground=True)
+        cirrus.start_sync()
+    except KeyboardInterrupt:
+        cirrus.stop_sync()
+        sys.exit()

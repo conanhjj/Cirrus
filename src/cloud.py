@@ -55,7 +55,6 @@ class CloudFS:
         'split fullname by _'
         return string.split(fullname, '_')[-2] #-1 is v, -1 is meta
 
-    
     def query_cloudfile_md5(self, path):
         bucket, shortname, filename_size = self.get_bucket_shortfilename(path)
         cur_filename, old_ver = self.dropbox.get_file_maxver(bucket, shortname)
@@ -76,9 +75,10 @@ class CloudFS:
         dropbox_block = self.dropbox.read(bucket, cur_filename)
         # print "dropbox content:\n%s" %  dropbox_block
         s3_block = self.s3.read(bucket, cur_filename)
-        # print "s3 content:\n%s" %  s3_block
-        gs_block = self.gs.read(bucket, cur_filename)
-        # print "gs content:\n%s" % gs_block
+        print "s3 content:\n%s" %  s3_block
+        #gs_block = self.gs.read(bucket, cur_filename)
+        gs_block = ""
+        #print "gs content:\n%s" % gs_block
         azure_block = self.azure.read(bucket, cur_filename)
         # print "azure content:\n%s" % azure_block        
         
@@ -127,7 +127,7 @@ class CloudFS:
         'write to different cloud with differnt blocks'
         self.dropbox.write(bucket, filename, shares[0])
         self.s3.write(bucket, filename, shares[1])
-        self.gs.write(bucket, filename, shares[2])
+        #self.gs.write(bucket, filename, shares[2])
         self.azure.write(bucket, filename, shares[2])
 
     def delete(self, path):

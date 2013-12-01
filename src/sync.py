@@ -2,24 +2,26 @@
 import os
 import threading
 import time
+from fileutil import FileUtil
 from cloud import CloudFS
 
 
 class SyncThread(threading.Thread):
 
-    def __init__(self, file_dir, cloudFS):
+    def __init__(self, file_dir, cloudfs):
         super(SyncThread, self).__init__()
         self.root_dir = file_dir
         self.stop_sync = False
-        self.cloud = cloudFS
+        self.cloud = cloudfs
 
     def run(self):
+        print "local sync thread start"
         while True:
             if self.stop_sync:
                 break
 
             self.sync(self.root_dir)
-
+            time.sleep(10)
 
     def sync(self, file_name):
         if os.path.isdir(file_name):
@@ -31,16 +33,16 @@ class SyncThread(threading.Thread):
         else:
             #check local file_name and remote file
             if not self.is_same(file_name):
-                print "Push local file to cloud: " + file_name
+                print "Push different local file to cloud: " + file_name
                 self.cloud.write(file_name, open(file_name).read())
 
     def is_same(self, local_file_name):
-        local_time = os.stat(local_file_name).st_mtime
-        print local_time
-        remote_time = self.cloud.get_remote_time(local_file_name)
-        return local_time == remote_time
+        local_md5 = FileUtil.file_md5(local_file_name)
+        remote_md5 = self.cloud.query_cloudfile_md5(local_file_name)
+        return local_md5 == remote_md5
 
     def stop(self):
+        print "local sync thread stop"
         self.stop_sync = True
 
 
@@ -49,11 +51,13 @@ class FakeCloud:
     def __int__(self):
         pass
 
-    def get_remote_time(self, file_name):
+    @staticmethod
+    def query_cloudfile_md5(file_name):
         print file_name
-        return 111
+        return "111"
 
-    def write(self, filename, data):
+    @staticmethod
+    def write(filename, data):
         print filename, data
 
 if __name__ == "__main__":
