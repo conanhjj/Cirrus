@@ -124,8 +124,8 @@ class S3FS():
             print 'Cannot clean s3 storage'
 
 
-s3fs = S3FS()
-s3fs.get_all_files()
+# s3fs = S3FS()
+# s3fs.get_all_files()
 
 
 

@@ -176,12 +176,12 @@ class Encoder(object):
 #        elapsed = Stopwatch()
 
         if md5 is None:
-            m = md5.new()
+            # m = md5.new()
+            # m.update(data)
+            # md5 = m.digest()
+            m = hashlib.md5()
             m.update(data)
-            md5 = m.digest()
-#             m = hashlib.md5()
-#             m.update(data)
-#             md5 = m.hexdigest()
+            md5 = m.hexdigest()
         
         osize = len(data)
         # pad data
@@ -210,12 +210,12 @@ class Encoder(object):
         if sanity_check:
             d = Decoder(self.fec.k, self.fec.m)
             vdat = d.decode(blocks[:self.fec.k], fecmeta)
-#             vm = hashlib.md5()
-#             vm.update(vdat)
-#             vmd5 = vm.hexdigest()
-            vm = md5.new()
+            vm = hashlib.md5()
             vm.update(vdat)
-            vmd5 = vm.digest()
+            vmd5 = vm.hexdigest()
+            # vm = md5.new()
+            # vm.update(vdat)
+            # vmd5 = vm.digest()
             if len(vdat) != osize:
                 raise Exception # sanity check fail
             if vmd5 != md5:

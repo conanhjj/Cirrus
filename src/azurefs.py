@@ -117,8 +117,8 @@ class AZUREFS():
             print 'Cannot clean azure storage storage'
 
 
-azurefs = AZUREFS()
-azurefs.get_all_files()
+# azurefs = AZUREFS()
+# azurefs.get_all_files()
 
 
 

@@ -129,6 +129,6 @@ class GSFS():
             print 'Cannot clean Google cloud storage'
 
 
-gsfs = GSFS()
-gsfs.get_all_files()
+# gsfs = GSFS()
+# gsfs.get_all_files()
 
