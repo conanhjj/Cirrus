@@ -151,6 +151,7 @@ if __name__ == '__main__':
     try:
         fuse = FUSE(cirrus, cirrus_path, foreground=True)
     except KeyboardInterrupt:
+        cirrus.stop_sync()
         sys.exit()
     cirrus.stop_sync()
 
