@@ -46,7 +46,6 @@ class CloudFS:
         bucket, encrypted_filename, filename_size = self.get_bucket_shortfilename(path)
         filename = encrypted_filename + '_'+ metastr + '_' + str(ver)
         return bucket, filename
-
         
     def getmetastr(self, path):
         'query the file with the path and the max vers, and return the meta_str'
@@ -56,6 +55,13 @@ class CloudFS:
         'split fullname by _'
         return string.split(fullname, '_')[-2] #-1 is v, -1 is meta
 
+    
+    def query_cloudfile_md5(self, path):
+        bucket, shortname, filename_size = self.get_bucket_shortfilename(path)
+        cur_filename, old_ver = self.dropbox.get_file_maxver(bucket, shortname)
+        metastr = string.split(cur_filename, '_')[-2]
+        fecmeta = self.decoder.decode_meta(metastr)
+        return fecmeta.md5
     
     def read(self, path, size, offset):
         bucket, shortname, filename_size = self.get_bucket_shortfilename(path)

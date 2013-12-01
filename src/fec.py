@@ -40,7 +40,7 @@
 # 
 
 
-import sys
+import sys, string
 try:
     import zfec
 except ImportError, e:
@@ -176,9 +176,12 @@ class Encoder(object):
 #        elapsed = Stopwatch()
 
         if md5 is None:
-            m = hashlib.md5()
+            m = md5.new()
             m.update(data)
-            md5 = m.hexdigest()
+            md5 = m.digest()
+#             m = hashlib.md5()
+#             m.update(data)
+#             md5 = m.hexdigest()
         
         osize = len(data)
         # pad data
@@ -207,9 +210,12 @@ class Encoder(object):
         if sanity_check:
             d = Decoder(self.fec.k, self.fec.m)
             vdat = d.decode(blocks[:self.fec.k], fecmeta)
-            vm = hashlib.md5()
+#             vm = hashlib.md5()
+#             vm.update(vdat)
+#             vmd5 = vm.hexdigest()
+            vm = md5.new()
             vm.update(vdat)
-            vmd5 = vm.hexdigest()
+            vmd5 = vm.digest()
             if len(vdat) != osize:
                 raise Exception # sanity check fail
             if vmd5 != md5:
@@ -217,7 +223,6 @@ class Encoder(object):
 
 #        record_event("zfec:encode bytes", len(data))()
 #        record_event("zfec:encode time", elapsed())()
-
 
 
         return blocks, fecmeta
@@ -228,7 +233,16 @@ class Decoder(object):
     def __init__(self, k, m, key):
         self.fec = zfec.Decoder(k, m)
         self.cipher = AES.new(process_cipherkey(key), AES.MODE_ECB, CYPHER_IV)
+    
+    def decode_meta_from_filename(self, filename):
+        secs = string.split(filename, '_')
+        metastr = secs[-2]
+        encoded_filename = secs[0]
+        fecmeta = self.decode_meta(metastr)
+        org_filename = self.decode_filename(encoded_filename, fecmeta.fnsz)
+        return org_filename, fecmeta.size, fecmeta.md5
         
+    
     def decode_meta(self, fecmetastr):
         return FECMeta.read(fecmetastr)
     

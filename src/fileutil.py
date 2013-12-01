@@ -1,5 +1,6 @@
 __author__ = 'Wind'
 
+import md5
 
 class FileUtil:
     def __init__(self):
@@ -16,6 +17,14 @@ class FileUtil:
         file_name = file_path[pos+1:]
 
         return tuple([file_dir, file_name])
+    
+    @staticmethod
+    def file_md5(file_path):
+        with open(file_path, 'r') as f:
+            data = f.read()
+            m = md5.new()
+            m.update(data)
+            return m.digest()
 
 if __name__ == "__main__":
     print FileUtil.split_path("/123456.ext")
