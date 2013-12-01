@@ -18,7 +18,7 @@ class Cirrus(LoggingMixIn, Operations):
     def __init__(self, root):
         self.root = realpath(root)
         self.rwlock = Lock()
-        self.cloud = cloud.CloudFS()
+        self.cloud = cloud.CloudFS(self.root)
 
     def __call__(self, op, path, *args):
         return super(Cirrus, self).__call__(op, self.root + path, *args)

@@ -2,14 +2,29 @@ __author__ = 'Wind'
 
 import os
 import base64, md5
+import fileutil
+import sys
+
+from fec import CYPHER_BLOCK_BYTES,CYPHER_IV,process_cipherkey,compute_encrypt_padding
+
+try:
+    from Crypto.Cipher import AES
+except ImportError, e:
+    print >> sys.stderr, """Fatal error: Cannot import Python Cryptography Toolkit (pycrypto).
+pycrypto can be obtained from https://pypi.python.org/pypi/pycrypto
+"""
+    sys.exit(1)
 
 class BucketGenerator:
 
-    def __init__(self, bucket_file="bucket"):
+    def __init__(self, bucket_file="bucket", clouds=[], key='password'):
         self.bucket2dir = {}
         self.dir2bucket = {}
         self.bucket_file = bucket_file
+        self.clouds = clouds
+        self.cipher = AES.new(process_cipherkey(key), AES.MODE_ECB, CYPHER_IV)
         self.load_bucket_file()
+
 
     def load_bucket_file(self):
         try:
@@ -42,10 +57,68 @@ class BucketGenerator:
             print self.dir2bucket
             print "finish loading"
             print "----------------"
+            
 
         except IOError as e:
             if e.errno != 2:    # ignore no such file
                 print e
+        self.verify_with_clouds()
+
+    def verify_with_clouds(self):
+        if len(self.clouds) == 0:
+            return        
+        
+        paths = fileutil.FileUtil.split_path(self.bucket_file)
+        bucket = self.get_bucket(paths[0]) #coded
+        filename = paths[1]
+        
+        cloud = self.clouds[0] #use the first one 
+        cur_filename, old_ver = cloud.get_file_maxver(bucket, filename)
+
+        if old_ver == 0:
+            print "mapping is not on cloud"
+            return #no cloud backup
+        
+        with open(self.bucket_file, 'r') as f:
+            data = f.read()
+            padding_bytes = compute_encrypt_padding(len(data))
+            
+            data = data + '\0' * padding_bytes          
+            
+            for cloud in self.clouds:
+                cloud_data = cloud.read(bucket, cur_filename)
+                cloud_data = self.cipher.decrypt(cloud_data)
+                if cloud_data == data:
+                    print "Mapping is verified!"
+                else:
+                    print "mapping is not the same as cloud content!"
+
+    def flush_to_clouds(self):
+        if len(self.clouds) == 0:
+            return
+
+        paths = fileutil.FileUtil.split_path(self.bucket_file)
+        bucket = self.get_bucket(paths[0]) #coded
+        filename = paths[1]
+        
+        cloud = self.clouds[0] #use the first one 
+        cur_filename, old_ver = cloud.get_file_maxver(bucket, filename)
+        
+        ver = old_ver + 1
+        print "Mapping old file %s current version %d\n" % (cur_filename, ver)
+
+        full_filename = filename + '_' + str(ver)  
+        
+        #start cloud flushing, in this case, the root is there
+        with open(self.bucket_file, 'r') as f:
+            data = f.read()
+            padding_bytes = compute_encrypt_padding(len(data))
+            data = data + '\0' * padding_bytes
+            
+            data = self.cipher.encrypt(data)
+            for cloud in self.clouds:
+                cloud.write(bucket, full_filename, data)  
+        
 
     def flush_to_disk(self):
         print "----------------"
@@ -60,8 +133,12 @@ class BucketGenerator:
             f.write("dir to bucket\n")
             for (file_dir, bucket) in self.dir2bucket.items():
                 f.write("%s %s\n" % (file_dir, bucket))
-        print "finish flushing"
-        print "----------------"
+        print "finish local flushing"
+        self.flush_to_clouds()
+        print "finish clouds flushing"
+        print "----------------"        
+
+
 
     def get_bucket(self, file_dir):
         if not file_dir in self.dir2bucket:
@@ -71,6 +148,8 @@ class BucketGenerator:
             if not bucket in self.bucket2dir:
                 self.bucket2dir[bucket] = []
             self.bucket2dir[bucket].append(file_dir)
+            
+            self.flush_to_disk()
 
         return self.dir2bucket[file_dir]
 
@@ -90,7 +169,7 @@ class BucketGenerator:
         return 'cfs'+base64.b32encode(m.digest())[0:-6].lower() #"cirrus_bucket"
 
 if __name__ == "__main__":
-    bucket_gen = BucketGenerator("new_bucket_file")
+    bucket_gen = BucketGenerator("new_bucket_file", [])
     print "get bucket:", "123/", bucket_gen.get_bucket("123/")
     print "get bucket:", "456/", bucket_gen.get_bucket("456/")
     print "get bucket:", "789/", bucket_gen.get_bucket("789/")

@@ -58,7 +58,7 @@ class DropboxFS():
     def get_file_maxver(self, bucket, shortname):
         try:
             self.ensure_get_bucket(bucket)
-            print 'try read files in  dropbox with %s, %s' % (bucket,shortname)
+            print 'try read files in  dropbox with %s,prefix %s' % (bucket,shortname)
             resp = self.client.metadata('/'+bucket+'/') 
             ver = 0
             cur_filename = ''

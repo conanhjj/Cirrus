@@ -84,7 +84,7 @@ def compute_padding(k, data_len):
 
 
 # we need encrypt the filename use the AES, so we need attach it.
-def compute_filename_padding(filename_len):
+def compute_encrypt_padding(filename_len):
     r = filename_len % CYPHER_BLOCK_BYTES
     if r == 0:
         return 0
@@ -235,7 +235,7 @@ class Decoder(object):
     def get_encrypted_filename(self, filename):
         filename_size = len(filename)
         
-        filename_padding_bytes = compute_filename_padding(filename_size)
+        filename_padding_bytes = compute_encrypt_padding(filename_size)
         padded_filename = filename + '\0' * filename_padding_bytes
         encrypted_filename = self.cipher.encrypt(padded_filename)
         encoded_filename = base64.b64encode(encrypted_filename, '+-')

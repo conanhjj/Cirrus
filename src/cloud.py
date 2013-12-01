@@ -12,20 +12,22 @@ import dropboxfs
 import s3fs
 import gsfs
 import azurefs
+import os
 
 class CloudFS:
-    def __init__(self):
+    def __init__(self, local_path):
         'initialize the cloud storage'
         'The below is used for fec encode/decode'
         self.k = 2 # two pieces
         self.m = 3 # after encoding output three pieces
         self.encoder = fec.Encoder(self.k,self.m, 'password')
         self.decoder = fec.Decoder(self.k,self.m, 'password')
-        self.bucketgen = bucketgen.BucketGenerator()
         self.dropbox = dropboxfs.DropboxFS()
         self.s3 = s3fs.S3FS()
         self.gs = gsfs.GSFS()
         self.azure = azurefs.AZUREFS()
+        self.clouds = [self.dropbox, self.s3, self.gs, self.azure]
+        self.bucketgen = bucketgen.BucketGenerator(os.path.join(local_path, 'bucketmap'), clouds = self.clouds, key = 'password')
 
     'input full path return paris of bucket name and encrypted shortfilename(no meta and ver)'
     def get_bucket_shortfilename(self, path):
