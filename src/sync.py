@@ -32,9 +32,16 @@ class SyncThread(threading.Thread):
                 self.sync(parent_directory + each_file)
         else:
             #check local file_name and remote file
+            right_slash_pos = file_name.rfind("/")
+            if file_name[right_slash_pos+1] == ".":   # ignore dot file
+                pass
+
             if not self.is_same(file_name):
                 print "Push different local file to cloud: " + file_name
-                self.cloud.write(file_name, open(file_name).read())
+                try:
+                    self.cloud.write(file_name, open(file_name).read())
+                except:
+                    print "Encounter error in push"
 
     def is_same(self, local_file_name):
         local_md5 = FileUtil.file_md5(local_file_name)

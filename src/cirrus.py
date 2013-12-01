@@ -9,6 +9,7 @@ from threading import Lock
 
 import os
 import sys
+import time
 
 import cloud
 
@@ -125,6 +126,7 @@ class Cirrus(LoggingMixIn, Operations):
         return localwriteret
 
     def start_sync(self):
+        time.sleep(15)
         self.local_sync.start()
 
     def stop_sync(self):
@@ -145,9 +147,10 @@ if __name__ == '__main__':
         os.makedirs(cirrus_localpath)
 
     cirrus = Cirrus(cirrus_localpath)
+    cirrus.start_sync()
     try:
         fuse = FUSE(cirrus, cirrus_path, foreground=True)
-        cirrus.start_sync()
     except KeyboardInterrupt:
-        cirrus.stop_sync()
         sys.exit()
+    cirrus.stop_sync()
+
