@@ -27,7 +27,8 @@ class CloudFS:
         self.s3 = s3fs.S3FS()
         self.gs = gsfs.GSFS()
         self.azure = azurefs.AZUREFS()
-        self.clouds = [self.dropbox, self.s3, self.gs, self.azure]
+        #self.clouds = [self.dropbox, self.s3, self.gs, self.azure]
+        self.clouds = [self.dropbox, self.s3, self.azure]
         self.bucketgen = bucketgen.BucketGenerator(os.path.join(local_path, '.bucketmap'), clouds = self.clouds, key = 'password')
 
     'input full path return paris of bucket name and encrypted shortfilename(no meta and ver)'
@@ -150,21 +151,5 @@ class CloudFS:
     def clean(self):
         self.dropbox.clean()
         self.s3.clean()
-        self.gs.clean()
+        #self.gs.clean()
         self.azure.clean()
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-        
-        

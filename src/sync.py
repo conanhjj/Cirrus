@@ -2,49 +2,48 @@
 import os
 import threading
 import time
+import sys
 from fileutil import FileUtil
 from cloud import CloudFS
 
 
 class SyncThread(threading.Thread):
 
-    def __init__(self, file_dir, cloudfs):
+    def __init__(self, local_dir, cloudfs):
         super(SyncThread, self).__init__()
-        self.root_dir = file_dir
+        self.root_dir = local_dir
         self.stop_sync = False
         self.cloud = cloudfs
 
     def run(self):
-        print "local sync thread start"
-        while True:
-            if self.stop_sync:
-                break
+        print "local sync thread start", self.root_dir
+        self.sync(self.root_dir)
 
-            self.sync(self.root_dir)
-            time.sleep(10)
+    def sync(self, local_file_name):
+        fuse_file_name = local_file_name.replace("_local", "")
+        print "sync thread check:", local_file_name
 
-    def sync(self, file_name):
-        print "sync thread check:", file_name
-        if os.path.isdir(file_name):
-            files = os.listdir(file_name)
-            parent_directory = file_name + "/"
+        if os.path.isdir(local_file_name):
+            files = os.listdir(local_file_name)
+            parent_directory = local_file_name + "/"
 
             for each_file in files:
                 self.sync(parent_directory + each_file)
         else:
             #check local file_name and remote file
-            if SyncThread.is_hidden_file(file_name):
+            if SyncThread.is_hidden_file(local_file_name):
                 pass
-            elif not self.is_same(file_name):
-                print "Push different local file to cloud: " + file_name
+            elif not self.is_same(local_file_name, fuse_file_name):
+                print "Push different local file to cloud: " + local_file_name
                 try:
-                    self.cloud.write(file_name, open(file_name).read())
-                except:
+                    self.cloud.write(fuse_file_name, open(local_file_name).read())
+                except Exception, ex:
+                    print ex
                     print "Encounter error in push"
 
-    def is_same(self, local_file_name):
+    def is_same(self, local_file_name, fuse_file_name):
         local_md5 = FileUtil.file_md5(local_file_name)
-        remote_md5 = self.cloud.query_cloudfile_md5(local_file_name)
+        remote_md5 = self.cloud.query_cloudfile_md5(fuse_file_name)
         #print "file name", local_file_name
         #print "local_md5", local_md5
         #print "remote_md5", remote_md5

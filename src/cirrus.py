@@ -126,7 +126,6 @@ class Cirrus(LoggingMixIn, Operations):
         return localwriteret
 
     def start_sync(self):
-        time.sleep(15)
         self.local_sync.start()
 
     def stop_sync(self):
