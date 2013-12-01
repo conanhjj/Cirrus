@@ -18,28 +18,26 @@ class SyncThread(threading.Thread):
             if self.stop_sync:
                 break
 
-            if not self.check(self.root_dir):
-                str = raw_input()
-                print str
+            self.sync(self.root_dir)
 
 
-    def check(self, file_name):
+    def sync(self, file_name):
         if os.path.isdir(file_name):
             files = os.listdir(file_name)
             parent_directory = file_name + "/"
 
             for each_file in files:
-                if not self.check(parent_directory + each_file):
-                    return False
+                self.sync(parent_directory + each_file)
         else:
             #check local file_name and remote file
             if not self.is_same(file_name):
+                print "Push local file to cloud: " + file_name
                 self.cloud.write(file_name, open(file_name).read())
 
-    def is_same(self, file_name):
-        local_time = os.stat(file_name).st_mtime
+    def is_same(self, local_file_name):
+        local_time = os.stat(local_file_name).st_mtime
         print local_time
-        remote_time = self.cloud.get_remote_time(file_name)
+        remote_time = self.cloud.get_remote_time(local_file_name)
         return local_time == remote_time
 
     def stop(self):
