@@ -19,6 +19,7 @@ class Cirrus(LoggingMixIn, Operations):
         self.root = realpath(root)
         self.rwlock = Lock()
         self.cloud = cloud.CloudFS(self.root)
+        self.cloud.clean()
 
     def __call__(self, op, path, *args):
         return super(Cirrus, self).__call__(op, self.root + path, *args)
@@ -56,14 +57,15 @@ class Cirrus(LoggingMixIn, Operations):
     open = os.open
 
     def read(self, path, size, offset, fh):
+        # print 'read: ' + path
         with self.rwlock:
             os.lseek(fh, offset, 0)
             localdata = os.read(fh, size)
-            clouddata = self.cloud.read(path, size, offset)
-            if clouddata != localdata:
-                print('Cirrus Read: local data of %s is different to cloud data' % path)
-            else:
-                print('Cirrus Read: Local data of %s is verified by cloud data' % path)
+            # clouddata = self.cloud.read(path, size, offset)
+            # if clouddata != localdata:
+            #     print('Cirrus Read: local data of %s is different to cloud data' % path)
+            # else:
+            #     print('Cirrus Read: Local data of %s is verified by cloud data' % path)
             return localdata
 
     def readdir(self, path, fh):
@@ -77,7 +79,9 @@ class Cirrus(LoggingMixIn, Operations):
     def rename(self, old, new):
         return os.rename(old, self.root + new)
 
-    rmdir = os.rmdir
+    def rmdir(self, path):
+        self.cloud.rmdir(path)
+        return os.rmdir(path)
 
     def statfs(self, path):
         stv = os.statvfs(path)
@@ -93,13 +97,13 @@ class Cirrus(LoggingMixIn, Operations):
         print "--------->local truncate called %d,%s\n" % (length, path)
         with open(path, 'r+') as f:
             f.truncate(length)
-            'Need read the new data and call write again'
-            f.seek(0, 0)
-            newdata = f.read(length)
-            self.cloud.write(path, newdata)
             
+    def unlink(self, path):
+        if path.rfind('/.') == -1:
+            print '----------delete: ' + path 
+            self.cloud.delete(path)
+        return os.unlink(path)
 
-    unlink = os.unlink
     utimens = os.utime
 
     def write(self, path, data, offset, fh):
@@ -107,12 +111,14 @@ class Cirrus(LoggingMixIn, Operations):
         with self.rwlock:
             os.lseek(fh, offset, 0)
             localwriteret = os.write(fh, data)
-        with open(path, 'r') as f:
-            'query the new file size'
-            newsize = os.stat(path).st_size
-            f.seek(0, 0)
-            newdata = f.read(newsize)
-            self.cloud.write(path, newdata)
+        if path.rfind('/.') == -1:
+            print '----------write: ' + path
+            with open(path, 'r') as f:
+                'query the new file size'
+                newsize = os.stat(path).st_size
+                f.seek(0, 0)
+                newdata = f.read(newsize)
+                self.cloud.write(path, newdata)
         return localwriteret
 
 

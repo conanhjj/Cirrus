@@ -6,7 +6,7 @@ from gslib.third_party.oauth2_plugin import oauth2_plugin
 # URI scheme for Google Cloud Storage.
 GOOGLE_STORAGE = 'gs'
 
-bucket_name = 'cirrus_bucket'
+bucket_name = 'cats2342432'
 
 # put an object
 filename = 'hello'
