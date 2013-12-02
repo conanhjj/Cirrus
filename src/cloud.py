@@ -13,6 +13,10 @@ import s3fs
 import gsfs
 import azurefs
 import os
+import time
+
+def calc_rate(byte_size, time_in_s):
+    return float(byte_size)/1024/1024/time_in_s
 
 class CloudFS:
     def __init__(self, local_path):
@@ -102,10 +106,16 @@ class CloudFS:
         'cp the file with the new name, maintain the meta'
 
 
-    def write(self, path, data):        
+
+    def write(self, path, data):
+        file_size = len(data)        
+        print '[CFS][Cloud]Write file: %s, size %d' % (path, file_size)
         bucket, shortname, filename_size = self.get_bucket_shortfilename(path)
         # print "filename %s, filename size %d\n" %(shortname, filename_size)
+        time1 = time.time()
         shares, fecmeta = self.encoder.encode(data, filename_size)
+        time2 = time.time()
+        
         # print "--------fecmeta------------"
         metastr = str(fecmeta)
         # print metastr
@@ -123,12 +133,18 @@ class CloudFS:
         'no such file, ver=1, else ver = 2'
         ver = old_ver + 1
         bucket, filename = self.get_bucket_fullfilename(path,  metastr, ver)
+        time3 = time.time()
         # print "---------bucket: %s, filename: %s" % (bucket, filename)
         'write to different cloud with differnt blocks'
         self.dropbox.write(bucket, filename, shares[0])
         self.s3.write(bucket, filename, shares[1])
         #self.gs.write(bucket, filename, shares[2])
         self.azure.write(bucket, filename, shares[2])
+        time4 = time.time()
+        print '[CFS][Cloud]Write: Encode time %.3f, Rate %.3f MB/s' % (time2-time1, calc_rate(file_size, time2-time1))
+        print '[CFS][Cloud]Write: Prepare meta time %.3f' % (time3-time2)
+        print '[CFS][Cloud]Write: Upload time %.3f, Rate %.3f MB/s' % (time4-time3, calc_rate(file_size, time4-time3))
+        
 
     def delete(self, path):
         bucket, prefix, filename_size = self.get_bucket_shortfilename(path)

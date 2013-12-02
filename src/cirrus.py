@@ -15,6 +15,7 @@ import cloud
 
 from fuse import FUSE, FuseOSError, Operations, LoggingMixIn
 from sync import SyncThread
+from fileoptask import CloudFileOpThread,WRITE_OP,DELETE_OP,QUIT_OP
 
 
 class Cirrus(LoggingMixIn, Operations):
@@ -25,6 +26,8 @@ class Cirrus(LoggingMixIn, Operations):
         self.local_sync = SyncThread(self.root, self.cloud)
         self.local_sync.sync(self.root)
         print "[CFS][Sync]Local file system check and sync finishes!"
+        self.fileop_thread = CloudFileOpThread(self.cloud)
+        self.fileop_thread.start()
         print "[CFS][Core]Cirrus file system is ready to use!"
         print "[CFS][Core]Press Ctrl+C to stop Cirrus file system!"
 
@@ -119,13 +122,14 @@ class Cirrus(LoggingMixIn, Operations):
             os.lseek(fh, offset, 0)
             localwriteret = os.write(fh, data)
         if path.rfind('/.') == -1:
-            print '----------write: ' + path
-            with open(path, 'r') as f:
-                'query the new file size'
-                newsize = os.stat(path).st_size
-                f.seek(0, 0)
-                newdata = f.read(newsize)
-                self.cloud.write(path, newdata)
+            cirrus.fileop_thread.add_task(path, WRITE_OP)
+#         if path.rfind('/.') == -1:
+#             with open(path, 'r') as f:
+#                 'query the new file size'
+#                 newsize = os.stat(path).st_size
+#                 f.seek(0, 0)
+#                 newdata = f.read(newsize)
+#                 self.cloud.write(path, newdata)
         return localwriteret
 
     def start_sync(self):
@@ -150,10 +154,14 @@ if __name__ == '__main__':
 
     cirrus = Cirrus(cirrus_localpath)
     #cirrus.start_sync()
+    
     try:
         fuse = FUSE(cirrus, cirrus_path, foreground=True)
     except KeyboardInterrupt:
+        print 'ctrl c issues'
         #cirrus.stop_sync()
         sys.exit()
     #cirrus.stop_sync()
+    cirrus.fileop_thread.add_task('endtask', QUIT_OP)
+    cirrus.fileop_thread.join()
 
