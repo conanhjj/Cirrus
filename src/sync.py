@@ -20,8 +20,7 @@ class SyncThread(threading.Thread):
         self.sync(self.root_dir)
 
     def sync(self, local_file_name):
-        fuse_file_name = local_file_name.replace("_local", "")
-        print "sync thread check:", local_file_name
+        # print "[CFS][Sync]Check local file:", local_file_name
 
         if os.path.isdir(local_file_name):
             files = os.listdir(local_file_name)
@@ -33,17 +32,18 @@ class SyncThread(threading.Thread):
             #check local file_name and remote file
             if SyncThread.is_hidden_file(local_file_name):
                 pass
-            elif not self.is_same(local_file_name, fuse_file_name):
-                print "Push different local file to cloud: " + local_file_name
+            elif not self.is_same(local_file_name):
+                print "[CFS][Sync]Found unsynced local file: " + local_file_name
                 try:
-                    self.cloud.write(fuse_file_name, open(local_file_name).read())
+                    self.cloud.write(local_file_name, open(local_file_name).read())
+                    print "[CFS][Sync]Sync local file successfully: " + local_file_name
                 except Exception, ex:
                     print ex
-                    print "Encounter error in push"
+                    print "[CFS][Sync]Error:Sync local file error in push!"
 
-    def is_same(self, local_file_name, fuse_file_name):
+    def is_same(self, local_file_name):
         local_md5 = FileUtil.file_md5(local_file_name)
-        remote_md5 = self.cloud.query_cloudfile_md5(fuse_file_name)
+        remote_md5 = self.cloud.query_cloudfile_md5(local_file_name)
         #print "file name", local_file_name
         #print "local_md5", local_md5
         #print "remote_md5", remote_md5

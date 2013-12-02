@@ -24,13 +24,14 @@ class BucketGenerator:
         self.clouds = clouds
         self.cipher = AES.new(process_cipherkey(key), AES.MODE_ECB, CYPHER_IV)
         self.load_bucket_file()
+        print '[CFS][Bucketgen]Bucketgen module ready!'
 
 
     def load_bucket_file(self):
         try:
             with open(self.bucket_file, 'r') as f:
-                print "----------------"
-                print "load bucket from file", self.bucket_file
+                # print "----------------"
+                # print "load bucket from file", self.bucket_file
 
                 mode = 0
                 for line in f:
@@ -53,10 +54,11 @@ class BucketGenerator:
                     else:
                         raise ValueError("Illegal bucket file")
 
-            print self.bucket2dir
-            print self.dir2bucket
-            print "finish loading"
-            print "----------------"
+            # print self.bucket2dir
+            # print self.dir2bucket
+            # print "finish loading"
+            # print "----------------"
+            print '[CFS][Bucketgen]Load local bucket mapping successfully!'
             
 
         except IOError as e:
@@ -69,6 +71,7 @@ class BucketGenerator:
             return        
         
         paths = fileutil.FileUtil.split_path(self.bucket_file)
+        # fuse_root_path = paths[0].replace("_local", "")
         bucket = self.get_bucket(paths[0]) #coded
         filename = paths[1]
         
@@ -76,9 +79,8 @@ class BucketGenerator:
         cur_filename, old_ver = cloud.get_file_maxver(bucket, filename)
 
         if old_ver == 0:
-            print "mapping is not on cloud"
+            print "[CFS][Bucketgen]Warning:bucket mapping is not on the clouds!"
             self.flush_to_clouds()
-            print 'flush to cloud successfully'
             return #no cloud backup
         
         with open(self.bucket_file, 'r') as f:
@@ -91,15 +93,16 @@ class BucketGenerator:
                 cloud_data = cloud.read(bucket, cur_filename)
                 cloud_data = self.cipher.decrypt(cloud_data)
                 if cloud_data == data:
-                    print "Mapping is verified!"
+                    print "[CFS][Bucketgen]Bucket mapping is verified!"
                 else:
-                    print "mapping is not the same as cloud content!"
+                    print "[CFS][Bucketgen]Error:Bucket mapping is not the same as cloud content!"
 
     def flush_to_clouds(self):
         if len(self.clouds) == 0:
             return
 
         paths = fileutil.FileUtil.split_path(self.bucket_file)
+        # fuse_root_path = paths[0].replace("_local", "")
         bucket = self.get_bucket(paths[0]) #coded
         filename = paths[1]
         
@@ -107,7 +110,7 @@ class BucketGenerator:
         cur_filename, old_ver = cloud.get_file_maxver(bucket, filename)
         
         ver = old_ver + 1
-        print "Mapping old file %s current version %d\n" % (cur_filename, ver)
+        #print "Mapping old file %s current version %d\n" % (cur_filename, ver)
 
         full_filename = filename + '_' + str(ver)  
         
@@ -120,25 +123,24 @@ class BucketGenerator:
             data = self.cipher.encrypt(data)
             for cloud in self.clouds:
                 cloud.write(bucket, full_filename, data)  
+        print '[CFS][Bucketgen]Flush bucket mapping to cloud successfully'
         
 
     def flush_to_disk(self):
-        print "----------------"
-        print "flush bucket to disk"
+        # print "----------------"
+        # print "flush bucket to disk"
         with open(self.bucket_file, 'w') as f:
-            print "write bucket2dir:", self.bucket2dir
+            # print "write bucket2dir:", self.bucket2dir
             f.write("bucket to dir\n")
             for (bucket, dir_list) in self.bucket2dir.items():
                 f.write("%s [%s]\n" % (bucket, ','.join([str("'" + x + "'") for x in dir_list])))
 
-            print "write dir2bucket:", self.dir2bucket
+            # print "write dir2bucket:", self.dir2bucket
             f.write("dir to bucket\n")
             for (file_dir, bucket) in self.dir2bucket.items():
                 f.write("%s %s\n" % (file_dir, bucket))
-        print "finish local flushing"
+        print '[CFS][Bucketgen]Flush bucket mapping to local successfully'
         self.flush_to_clouds()
-        print "finish clouds flushing"
-        print "----------------"        
 
 
 

@@ -152,5 +152,5 @@ class CloudFS:
     def clean(self):
         self.dropbox.clean()
         self.s3.clean()
-        #self.gs.clean()
-        self.azure.clean()
+        self.gs.clean()
+        #self.azure.clean()

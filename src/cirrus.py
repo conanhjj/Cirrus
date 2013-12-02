@@ -22,7 +22,11 @@ class Cirrus(LoggingMixIn, Operations):
         self.root = realpath(root)
         self.rwlock = Lock()
         self.cloud = cloud.CloudFS(self.root)
-        # self.local_sync = SyncThread(self.root, self.cloud)
+        self.local_sync = SyncThread(self.root, self.cloud)
+        self.local_sync.sync(self.root)
+        print "[CFS][Sync]Local file system check and sync finishes!"
+        print "[CFS][Core]Cirrus file system is ready to use!"
+        print "[CFS][Core]Press Ctrl+C to stop Cirrus file system!"
 
     def __call__(self, op, path, *args):
         return super(Cirrus, self).__call__(op, self.root + path, *args)
