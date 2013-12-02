@@ -5,6 +5,8 @@ Created on Nov 2, 2013
 '''
 import os, string
 from azure.storage import *
+from Crypto.Cipher import AES
+from fec import CYPHER_IV,process_cipherkey
 
 class AZUREFS():
     
@@ -16,7 +18,7 @@ class AZUREFS():
         try:
             # self.blob_service.get_container_acl(bucket_name)
             self.blob_service.create_container(bucket_name)
-            print 'create container ' + bucket_name + ' successfully'
+            # print 'create container ' + bucket_name + ' successfully'
         except IOError:
             print 'the container exists'
         
@@ -24,6 +26,8 @@ class AZUREFS():
         # print 'try write to azure with %s, %s' % (bucket,filename)
         'not know how to directly write content, create a local file then rm it'
         try:
+            # print '----------write data----------'
+            # print data
             self.ensure_get_bucket(bucket)
             self.blob_service.put_blob(bucket, filename, data, x_ms_blob_type='BlockBlob')
         except IOError:
@@ -58,12 +62,22 @@ class AZUREFS():
             print 'cannot list filenames from azure'
             return ''
 
-    def get_all_files(self):
+    def get_all_files(self, root):
         try:
             files = []
             rs = self.blob_service.list_containers()
             for b in rs:
-                bucket_dic = self.get_files_from_bucket(b)
+                if not os.path.exists(root + b.name):
+                    os.makedirs(root + b.name)
+
+                bucket_dic, map_path = self.get_files_from_bucket(b)
+                if map_path != '':
+                    print map_path
+                    cipher = AES.new(process_cipherkey('password'), AES.MODE_ECB, CYPHER_IV)
+                    blob = self.blob_service.get_blob(b.name, map_path)
+                    data = cipher.decrypt(blob)
+                    print data
+
                 for prefix in bucket_dic:
                     filename = b.name + '/' + prefix + '_' + bucket_dic[prefix][0] + '_' + str(bucket_dic[prefix][1])
                     files.append(filename)
@@ -75,18 +89,26 @@ class AZUREFS():
     def get_files_from_bucket(self, bucket):
         try:
             dic = dict()
+            map_path = ''
             blob_list = self.blob_service.list_blobs(bucket.name)
             for blob in blob_list:
                 filename = blob.name.split('_')
                 prefix = filename[0]
-                meta = filename[1]
-                version = int(filename[2])
-                if prefix in dic:
-                    if dic[prefix][1] < version:
-                        dic[prefix] = [meta, version]
+                if prefix.split('/')[-1] == '.bucketmap':
+                    if map_path == '':
+                        map_path = blob.name
+                    else:
+                        if int(map_path.split('_')[-1]) < filename[-1]:
+                            map_path = blob.name
                 else:
-                    dic[prefix] = [meta, version]
-            return dic
+                    meta = filename[1]
+                    version = int(filename[2])
+                    if prefix in dic:
+                        if dic[prefix][1] < version:
+                            dic[prefix] = [meta, version]
+                    else:
+                        dic[prefix] = [meta, version]
+            return dic, map_path
         except IOError:
             print 'Cannot get azure files'
 
@@ -119,7 +141,7 @@ class AZUREFS():
 
 
 # azurefs = AZUREFS()
-# azurefs.get_all_files()
+# azurefs.get_all_files('disk_local')
 
 
 

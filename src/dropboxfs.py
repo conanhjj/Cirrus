@@ -3,7 +3,9 @@ Created on Nov 2, 2013
 
 @author: Administrator
 '''
-import dropbox, os, string
+import dropbox, os, string, bucketgen
+from Crypto.Cipher import AES
+from fec import CYPHER_IV,process_cipherkey
 
 
 def dropboxfilename(bucket, filename):
@@ -77,24 +79,36 @@ class DropboxFS():
             print 'cannot list filenames'
             return ''
 
-    def get_all_files(self, root):
+    def get_all_files(self):
         try:
             resp = self.client.metadata('/')
             files = []
+            bucketmap = dict()
             if 'contents' in resp:
                 for f in resp['contents']:
                     bucket = f['path']
-                    bucket_dic = self.get_files_from_bucket(bucket)
-                    if not os.path.exists(root + bucket):
-                        os.makedirs(root + bucket)
+                    bucket_dic, map_path = self.get_files_from_bucket(bucket)
+                    # if not os.path.exists(root + bucket):
+                    #     os.makedirs(root + bucket)
+                    if map_path != '':
+                        # print map_path
+                        cipher = AES.new(process_cipherkey('password'), AES.MODE_ECB, CYPHER_IV)
+                        data = cipher.decrypt(self.client.get_file(map_path).read())
+                        for line in data.split('\n'):
+                            # print line
+                            if line == 'bucket to dir':
+                                continue
+                            elif line == 'dir to bucket':
+                                break
+                            else:
+                                dirs = line.split()
+                                bucketmap[dirs[0]] = eval(dirs[1])
+                        
                     for prefix in bucket_dic:
                         filename = prefix + '_' + bucket_dic[prefix][0] + '_' + str(bucket_dic[prefix][1])
-                        files.append(filename)
-                        print filename
-                        # fh = self.client.get_file(filename).read()
-
-
-            return files    
+                        files.append(filename[1:])
+                
+            return bucketmap, files
         except dropbox.rest.ErrorResponse:
             print 'Cannot get dropbox files'
 
@@ -102,18 +116,27 @@ class DropboxFS():
         try:
             resp = self.client.metadata(bucket + '/')
             dic = dict()
+            map_path = ''
             if 'contents' in resp:
                 for f in resp['contents']:
                     filename = f['path'].split('_')
                     prefix = filename[0]
-                    meta = filename[1]
-                    version = int(filename[2])
-                    if prefix in dic:
-                        if dic[prefix][1] < version:
-                            dic[prefix] = [meta, version]
+                    # print 'filename: ' + prefix
+                    if prefix.split('/')[-1] == '.bucketmap':
+                        if map_path == '':
+                            map_path = f['path']
+                        else:
+                            if int(map_path.split('_')[-1]) < filename[-1]:
+                                map_path = f['path']
                     else:
-                        dic[prefix] = [meta, version]
-            return dic
+                        meta = filename[1]
+                        version = int(filename[2])
+                        if prefix in dic:
+                            if dic[prefix][1] < version:
+                                dic[prefix] = [meta, version]
+                        else:
+                            dic[prefix] = [meta, version]
+            return dic, map_path
         except dropbox.rest.ErrorResponse:
             print 'Cannot get dropbox files'
     
@@ -149,7 +172,7 @@ class DropboxFS():
             print 'Cannot clean dropbox storage'
 
 
-# dropboxfs = DropboxFS()
-# dropboxfs.get_all_files('disk_local')
+dropboxfs = DropboxFS()
+dropboxfs.get_all_files()
 
 

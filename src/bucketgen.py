@@ -59,7 +59,6 @@ class BucketGenerator:
             # print "finish loading"
             # print "----------------"
             print '[CFS][Bucketgen]Load local bucket mapping successfully!'
-            
 
         except IOError as e:
             if e.errno != 2:    # ignore no such file
