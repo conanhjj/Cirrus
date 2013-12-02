@@ -6,6 +6,8 @@ Created on Nov 2, 2013
 import os, string
 import boto
 from gslib.third_party.oauth2_plugin import oauth2_plugin
+from Crypto.Cipher import AES
+from fec import CYPHER_IV,process_cipherkey
 
 # URI scheme for Google Cloud Storage.
 GOOGLE_STORAGE = 'gs'
@@ -69,31 +71,55 @@ class GSFS():
         try:
             uri = boto.storage_uri('', GOOGLE_STORAGE)
             files = []
+            bucketmap = dict()
             for b in uri.get_all_buckets():
-                bucket_dic = self.get_files_from_bucket(b)
+                bucket_dic, map_path = self.get_files_from_bucket(b)
+                if map_path != '':
+                    # print map_path
+                    cipher = AES.new(process_cipherkey('password'), AES.MODE_ECB, CYPHER_IV)
+                    uri = boto.storage_uri(b.name + '/' + map_path, GOOGLE_STORAGE)
+                    data = cipher.decrypt(uri.get_key().get_contents_as_string())
+                    for line in data.split('\n'):
+                        # print line
+                        if line == 'bucket to dir':
+                            continue
+                        elif line == 'dir to bucket':
+                            break
+                        else:
+                            dirs = line.split()
+                            bucketmap[dirs[0]] = eval(dirs[1])
+
                 for prefix in bucket_dic:
                     filename = b.name + '/' + prefix + '_' + bucket_dic[prefix][0] + '_' + str(bucket_dic[prefix][1])
                     files.append(filename)
-                    print filename
-            return files  
+                    
+            return bucketmap, files 
         except IOError:
             print 'Cannot get google files'
 
     def get_files_from_bucket(self, bucket):
         try:
             dic = dict()
+            map_path = ''
             key_list = bucket.get_all_keys()
             for k in key_list:
                 filename = k.name.split('_')
                 prefix = filename[0]
-                meta = filename[1]
-                version = int(filename[2])
-                if prefix in dic:
-                    if dic[prefix][1] < version:
-                        dic[prefix] = [meta, version]
+                if prefix.split('/')[-1] == '.bucketmap':
+                    if map_path == '':
+                        map_path = k.name
+                    else:
+                        if int(map_path.split('_')[-1]) < filename[-1]:
+                            map_path = k.name
                 else:
-                    dic[prefix] = [meta, version]
-            return dic
+                    meta = filename[1]
+                    version = int(filename[2])
+                    if prefix in dic:
+                        if dic[prefix][1] < version:
+                            dic[prefix] = [meta, version]
+                    else:
+                        dic[prefix] = [meta, version]
+            return dic, map_path
         except IOError:
             print 'Cannot get google files'
 
@@ -130,5 +156,5 @@ class GSFS():
 
 
 # gsfs = GSFS()
-# gsfs.get_all_files()
+# gsfs.get_all_files('disk_local')
 
