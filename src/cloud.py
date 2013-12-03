@@ -211,4 +211,5 @@ class CloudFS:
         #self.azure.clean()
 
 # cloud = CloudFS('disk_local')
+# cloud.clean()
 # cloud.get_all_files()
