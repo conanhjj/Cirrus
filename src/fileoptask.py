@@ -66,6 +66,7 @@ class FileOpQueue:
                 old_tasks = self.filemap[filename]
                 for task in old_tasks:
                     task.valid = False #invalid the task
+                old_tasks.clear() #clean all old tasks
                 old_tasks.add(new_task)
             else:
                 self.filemap[filename] = Set([new_task])
